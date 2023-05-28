@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <input type="file" id="imageFile" accept="image/*"><br>
+    Cell Size: <input type="range" id="cellSize" min="1" max="100" value="10">
+    <canvas id="canvas"></canvas>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var img = new Image();
+        var imgData = null;
+
+        function drawImageWithDots() {
+            var cellSize = parseInt(document.getElementById('cellSize').value);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (var y = 0; y < img.height; y += cellSize) {
+                for (var x = 0; x < img.width; x += cellSize) {
+                    var total = 0;
+                    var count = 0;
+
+                    for (var dy = 0; dy < cellSize; dy++) {
+                        for (var dx = 0; dx < cellSize; dx++) {
+                            if (y+dy < img.height && x+dx < img.width) {
+                                var i = ((y+dy) * img.width + (x+dx)) * 4;
+                                var value = imgData.data[i] * 0.299 + imgData.data[i+1] * 0.587 + imgData.data[i+2] * 0.114;
+                                total += value;
+                                count++;
+                            }
+                        }
+                    }
+
+                    var darkness = 1 - total / count / 255;
+                    var radius = cellSize * darkness;
+                    ctx.beginPath();
+                    ctx.arc(x + cellSize/2, y + cellSize/2, radius, 0, Math.PI * 2, false);
+                    ctx.fill();
+                }
+            }
+        }
+
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            var url = URL.createObjectURL(file);
+
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+
+                imgData = ctx.getImageData(0, 0, img.width, img.height);
+
+                drawImageWithDots();
+            };
+            img.src = url;
+        });
+
+        document.getElementById('cellSize').addEventListener('input', function() {
+            if (imgData) {
+                drawImageWithDots();
+            }
+        });
+    </script>
+</body>
+</html>
